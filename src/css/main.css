@@ -31,3 +31,25 @@ body {
 .panel .colors div.selected {
   box-shadow: 0 0 2px 2px gold;
 }
+
+.panel .layers {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel .layers div {
+  height: 25px;
+  margin: 4px;
+}
+
+.panel .layers div.simple {
+  background: rgba(0, 255, 0, 0.5)
+}
+
+.panel .layers div.complex {
+  background: rgba(255, 0, 0, 0.5)
+}
+
+.panel .layers div.selected {
+  box-shadow: 0 0 2px 2px gold;
+}

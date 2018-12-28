@@ -1,15 +1,16 @@
 const Util = (function() {
 
-  function rectsAt(rects, point) {
-    return Object.keys(rects).filter(key => rectContains(rects[key], point))
+  function shapesAt(shapes, point) {
+    // return Object.keys(rects).filter(key => rectContains(rects[key], point))
+    return shapes.filter(shape => shapeContains(shape, point)).map(shape => shape.id)
   }
 
-  function rectContains(rect, point) {
-    return rect.x <= point.x && rect.y <= point.y && point.x <= (rect.x + rect.width) && point.y <= (rect.y + rect.height)
+  function shapeContains(shape, point) {
+    return shape.x <= point.x && shape.y <= point.y && point.x <= (shape.x + shape.width) && point.y <= (shape.y + shape.height)
   }
 
   return {
-    rectsAt,
-    rectContains
+    shapesAt,
+    shapeContains
   }
 })()

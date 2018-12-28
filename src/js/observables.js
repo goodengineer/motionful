@@ -18,6 +18,7 @@ const Observables = (function() {
   function getCanvasObservables(canvas, providers) {
     const mousedowns = Rx.Observable.fromEvent(canvas, 'mousedown')
     .map(e => {
+      e.preventDefault()
       const rect = e.target.getBoundingClientRect()
       return {
         x: e.clientX - rect.left,
@@ -40,6 +41,7 @@ const Observables = (function() {
 
     const moves = Rx.Observable.fromEvent(canvas, 'mousemove')
     .map(e => {
+      e.preventDefault()
       const rect = e.target.getBoundingClientRect()
       return {
         x: e.clientX - rect.left,
@@ -50,42 +52,45 @@ const Observables = (function() {
     const clicks = starts.concatMap(() => ends.takeUntil(moves))
 
     const selects = clicks
-    .filter(point => Util.rectsAt(providers.shapes(), point).length > 0)
-    .concatMap(point => Rx.Observable.from(Util.rectsAt(providers.shapes(), point)).take(1))
+    .filter(point => Util.shapesAt(providers.shapes(), point).length > 0)
+    .concatMap(point => Rx.Observable.from(Util.shapesAt(providers.shapes(), point)).take(1))
 
     const unselects = clicks
-    .filter(point => Util.rectsAt(providers.shapes(), point).length === 0)
+    .filter(point => Util.shapesAt(providers.shapes(), point).length === 0)
 
     const drags = starts
-    .filter(() => !providers.selected())
+    .filter(() => !providers.hasSelected())
     .concatMap(dragStartEvent => {
-      const id = providers.nextId()
-      return moves.takeUntil(ends).map(dragEvent => ({
-        id,
-        square: {
-          p1: {
-            x: dragStartEvent.x,
-            y: dragStartEvent.y
-          },
-          p2: {
-            x: dragEvent.x,
-            y: dragEvent.y
+
+      return moves.first().takeUntil(ends).concatMap(() => {
+        const id = providers.nextId()
+        return moves.takeUntil(ends).map(dragEvent => ({
+          id,
+          square: {
+            p1: {
+              x: dragStartEvent.x,
+              y: dragStartEvent.y
+            },
+            p2: {
+              x: dragEvent.x,
+              y: dragEvent.y
+            }
           }
-        }
-      }))
+        }))
+      })
     })
 
     const rectDrags = starts
-    .filter(() => providers.selected())
-    .filter(e => Util.rectsAt(providers.shapes(), {x: e.x, y: e.y}).includes(providers.selected()))
+    .filter(() => providers.hasSelected())
+    .filter(e => Util.shapesAt(providers.shapes(), {x: e.x, y: e.y}).includes(providers.selectedId()))
     .concatMap(dragStartEvent => {
-      const initialRect = providers.shapes()[providers.selected()]
+      const initialRect = providers.shape(providers.selectedId())
       const offset = {
         x: initialRect.x - dragStartEvent.x,
         y: initialRect.y - dragStartEvent.y
       }
       return moves.takeUntil(ends).map(dragEvent => ({
-        id: providers.selected(),
+        id: providers.selectedId(),
         to: {
           x: dragEvent.x,
           y: dragEvent.y

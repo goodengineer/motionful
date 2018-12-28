@@ -3,57 +3,48 @@ const Main = (() => {
   let canvas
   const state = {
     nextId: 0,
-    selectedColor: 'red',
-    shapes: {},
+    shapes: [],
     colors: [
-      '#f00', '#0f0', '#00f',
-      '#ff0', '#f0f', '#0ff'
+      {color: '#f00', selected: true},
+      {color: '#0f0', selected: false},
+      {color: '#00f', selected: false},
+      {color: '#ff0', selected: false},
+      {color: '#f0f', selected: false},
+      {color: '#0ff', selected: false}
     ]
   }
 
   const stateProviders = {
     nextId: () => state.nextId++,
-    selected: () => state.selected,
-    shapes: () => state.shapes
+    hasSelected: () => state.selected !== undefined,
+    selectedId: () => state.selected,
+    shape: id => state.shapes.find(shape => shape.id === id),
+    shapeIds: () => state.shapes.map(shape => shape.id),
+    shapes: () => state.shapes,
+    colors: () => state.colors,
+    selectedColor: () => state.colors.find(color => color.selected)
   }
 
   function start() {
     console.log('app started');
     canvas = document.getElementById('canvas')
 
-    populateColors()
-
     Renderer.render(canvas, stateProviders)
     subscribeCanvasObservables(canvas)
-    subscribeColorObservables()
+
+    redrawPanel()
   }
 
-  function populateColors() {
-    const colorsContainer = document.querySelector('.container .panel .colors')
-    const createColor = color => {
-      const el = document.createElement('div')
-      el.setAttribute('color', color)
-      el.style.background = color
-      return el
-    }
-    state.colors.forEach(color => {
-      colorsContainer.appendChild(createColor(color))
-    })
-  }
-
-  function subscribeColorObservables() {
-    const removeSelected = () => (
-      document.querySelectorAll('.panel .colors div')
-      .forEach(btn => btn.classList.remove('selected'))
-    )
+  function subscribePanelObservables() {
 
     const colorObservables = Observables.getColorObservables()
     colorObservables.forEach(obs => {
       obs.forEach(e => {
-        removeSelected()
-        e.toElement.classList.add('selected')
-        const color = e.toElement.getAttribute('color')
-        state.selectedColor = color
+        stateProviders.colors().forEach(color => {
+          color.selected = color.color === e.toElement.getAttribute('color')
+        })
+
+        redrawPanel()
       })
     })
   }
@@ -63,30 +54,53 @@ const Main = (() => {
     const canvasObservables = Observables.getCanvasObservables(canvas, stateProviders)
 
     canvasObservables.selects.forEach(id => {
+      if (stateProviders.hasSelected()) {
+        stateProviders.shape(stateProviders.selectedId()).selected = false
+      }
       state.selected = id
+      stateProviders.shape(id).selected = true
       Renderer.render(canvas, stateProviders)
+      redrawPanel()
     })
 
     canvasObservables.unselects.forEach(() => {
-      state.selected = undefined
-      Renderer.render(canvas, stateProviders)
+      if (stateProviders.hasSelected()) {
+        stateProviders.shape(stateProviders.selectedId()).selected = false
+        state.selected = undefined
+        Renderer.render(canvas, stateProviders)
+        redrawPanel()
+      }
     })
 
     canvasObservables.drags.forEach(data => {
       const square = data.square
+
+      const id = data.id
+      const name = `unnamed${data.id}`
       const x = Math.min(square.p1.x, square.p2.x)
       const y = Math.min(square.p1.y, square.p2.y)
       const width = Math.max(square.p1.x, square.p2.x) - x
       const height = Math.max(square.p1.y, square.p2.y) - y
-      state.shapes[data.id] = { x, y, width, height, color: state.selectedColor }
+      const color = stateProviders.selectedColor().color
+      const selected = false
+
+      state.shapes = state.shapes.filter(x => x.id !== data.id)
+      state.shapes.push({id, name, x, y, width, height, color, selected})
       Renderer.render(canvas, stateProviders)
+      redrawPanel()
     })
 
     canvasObservables.rectDrags.forEach(data => {
-      state.shapes[data.id].x = data.to.x + data.offset.x
-      state.shapes[data.id].y = data.to.y + data.offset.y
+      const shape = state.shapes.find(x => x.id === data.id)
+      shape.x = data.to.x + data.offset.x
+      shape.y = data.to.y + data.offset.y
       Renderer.render(canvas, stateProviders)
     })
+  }
+
+  function redrawPanel() {
+    Renderer.renderPanel(stateProviders)
+    subscribePanelObservables()
   }
 
   return {
