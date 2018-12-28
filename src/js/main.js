@@ -4,7 +4,11 @@ const Main = (() => {
   const state = {
     nextId: 0,
     selectedColor: 'red',
-    shapes: {}
+    shapes: {},
+    colors: [
+      '#f00', '#0f0', '#00f',
+      '#ff0', '#f0f', '#0ff'
+    ]
   }
 
   const stateProviders = {
@@ -17,9 +21,24 @@ const Main = (() => {
     console.log('app started');
     canvas = document.getElementById('canvas')
 
+    populateColors()
+
     Renderer.render(canvas, stateProviders)
     subscribeCanvasObservables(canvas)
     subscribeColorObservables()
+  }
+
+  function populateColors() {
+    const colorsContainer = document.querySelector('.container .panel .colors')
+    const createColor = color => {
+      const el = document.createElement('div')
+      el.setAttribute('color', color)
+      el.style.background = color
+      return el
+    }
+    state.colors.forEach(color => {
+      colorsContainer.appendChild(createColor(color))
+    })
   }
 
   function subscribeColorObservables() {

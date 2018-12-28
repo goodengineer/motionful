@@ -31,15 +31,3 @@ body {
 .panel .colors div.selected {
   box-shadow: 0 0 2px 2px gold;
 }
-
-.panel .colors div.red {
-  background: red;
-}
-
-.panel .colors div.green {
-  background: green;
-}
-
-.panel .colors div.blue {
-  background: blue;
-}
