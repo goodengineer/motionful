@@ -1,28 +1,12 @@
 const state = {
+  selectedColor: 'red',
   shapes: {}
 }
 
-const FPS = 60
-const Screen = {}
-const Time = {
-  deltaTime: 0
-}
-
-const Input = {
-  mouse: {
-    x: 0,
-    y: 0
-  }
-}
-
 const Main = (() => {
-  
+
   let nextId = 0
   let canvas
-  let interval
-
-  let startRenderTime = performance.now()
-  let endRenderTime = performance.now()
 
   function start() {
     console.log('app started');
@@ -33,23 +17,57 @@ const Main = (() => {
 
     render()
     setObservables()
+    setListeners()
+  }
+
+  function setListeners() {
+    const removeSelected = () => (
+      document.querySelectorAll('.panel .colors div')
+      .forEach(btn => btn.classList.remove('selected'))
+    )
+    document.querySelectorAll('.panel .colors div').forEach(btn => {
+      btn.addEventListener('click', e => {
+        removeSelected()
+        e.toElement.classList.add('selected')
+        const color = e.toElement.getAttribute('color')
+        state.selectedColor = color
+      })
+    })
   }
 
   function setObservables() {
     const starts = Rx.Observable.fromEvent(canvas, 'mousedown')
+    .map(e => {
+      const rect = e.target.getBoundingClientRect()
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      }
+    })
+
     const moves = Rx.Observable.fromEvent(canvas, 'mousemove')
+    .map(e => {
+      const rect = e.target.getBoundingClientRect()
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      }
+    })
 
     const mouseups = Rx.Observable.fromEvent(canvas, 'mouseup')
+    .map(e => {
+      const rect = e.target.getBoundingClientRect()
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      }
+    })
+
     const mouseleaves = Rx.Observable.fromEvent(canvas, 'mouseleave')
+
     const ends = mouseups.merge(mouseleaves)
 
-    const clicks = starts.concatMap(mouseDownEvent => {
-      return ends.takeUntil(moves).map(mouseUpEvent => {
-        const x = mouseUpEvent.x
-        const y = mouseUpEvent.y
-        return {x, y}
-      })
-    })
+    const clicks = starts.concatMap(() => ends.takeUntil(moves))
 
     const selects = clicks
     .filter(point => rectsAt(point).length > 0)
@@ -120,7 +138,7 @@ const Main = (() => {
       const y = Math.min(square.p1.y, square.p2.y)
       const width = Math.max(square.p1.x, square.p2.x) - x
       const height = Math.max(square.p1.y, square.p2.y) - y
-      state.shapes[data.id] = { x, y, width, height }
+      state.shapes[data.id] = { x, y, width, height, color: state.selectedColor }
       render()
     })
 
@@ -142,22 +160,23 @@ const Main = (() => {
   function render() {
     const ctx = canvas.getContext('2d')
 
-    ctx.fillStyle = '#ccc'
+    ctx.fillStyle = '#aaa'
     ctx.beginPath();
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.stroke()
     ctx.closePath();
 
-    ctx.fillStyle = '#f00'
     Object.keys(state.shapes).map(key => state.shapes[key]).forEach(rect => {
+      ctx.fillStyle = rect.color
       ctx.beginPath();
       ctx.fillRect(rect.x, rect.y, rect.width, rect.height)
       ctx.closePath();
     })
 
     if (state.selected) {
-      ctx.strokeStyle = '#00f'
+      ctx.strokeStyle = 'gold'
       const rect = state.shapes[state.selected]
+      ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.rect(rect.x, rect.y, rect.width, rect.height)
       ctx.stroke()
