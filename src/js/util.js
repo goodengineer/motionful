@@ -9,8 +9,13 @@ const Util = (function() {
     return shape.x <= point.x && shape.y <= point.y && point.x <= (shape.x + shape.width) && point.y <= (shape.y + shape.height)
   }
 
+  function clone(x) {
+      return JSON.parse(JSON.stringify(x))
+  }
+
   return {
     shapesAt,
-    shapeContains
+    shapeContains,
+    clone
   }
 })()

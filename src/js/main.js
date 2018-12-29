@@ -18,11 +18,43 @@ const Main = (() => {
     nextId: () => state.nextId++,
     hasSelected: () => state.selected !== undefined,
     selectedId: () => state.selected,
-    shape: id => state.shapes.find(shape => shape.id === id),
+    shape: id => Util.clone(state.shapes.find(shape => shape.id === id)),
     shapeIds: () => state.shapes.map(shape => shape.id),
-    shapes: () => state.shapes,
-    colors: () => state.colors,
-    selectedColor: () => state.colors.find(color => color.selected)
+    shapes: () => Util.clone(state.shapes),
+    colors: () => Util.clone(state.colors),
+    selectedColor: () => Util.clone(state.colors.find(color => color.selected))
+  }
+
+  const stateModifiers = {
+      selectedId: id => state.selected = id,
+      removeSelected: () => state.selected = undefined,
+      selectedColor: targetColor => (
+          state.colors = state.colors.map(color => (
+              color.color !== targetColor
+                ? ({...color, selected: false})
+                : ({...color, selected: true})
+          ))
+      ),
+      shapeColor: (id, targetColor) => (
+          state.shapes = state.shapes.map(shape => (
+              shape.id !== id
+                ? shape
+                : ({...shape, color: targetColor})
+          ))
+      ),
+      removeShape: id => (
+          state.shapes = state.shapes.filter(x => x.id !== id)
+      ),
+      appendShape: data => (
+          state.shapes = [...state.shapes, data]
+      ),
+      shapePosition: (id, x, y) => (
+          state.shapes = state.shapes.map(shape => (
+              shape.id !== id
+                ? shape
+                : ({...shape, x, y})
+          ))
+      )
   }
 
   function start() {
@@ -43,12 +75,10 @@ const Main = (() => {
     colorObservables.forEach(obs => {
       obs.forEach(e => {
         const targetColor = e.toElement.getAttribute('color')
-        stateProviders.colors().forEach(color => {
-          color.selected = color.color === targetColor
-        })
+        stateModifiers.selectedColor(targetColor)
 
         if(stateProviders.hasSelected()) {
-          stateProviders.shape(stateProviders.selectedId()).color = targetColor
+          stateModifiers.shapeColor(stateProviders.selectedId(), targetColor)
           Renderer.render(canvas, stateProviders)
         }
 
@@ -58,10 +88,7 @@ const Main = (() => {
 
     layerObservables.forEach(obs => obs.forEach(e => {
       const shapeId = parseInt(e.toElement.getAttribute('shapeId'))
-      stateProviders.shapes().forEach(shape => {
-        shape.selected = shape.id === shapeId
-      })
-      state.selected = shapeId
+      stateModifiers.selectedId(shapeId)
       Renderer.render(canvas, stateProviders)
       redrawPanel()
     }))
@@ -72,19 +99,14 @@ const Main = (() => {
     const canvasObservables = Observables.getCanvasObservables(canvas, stateProviders)
 
     canvasObservables.selects.forEach(id => {
-      if (stateProviders.hasSelected()) {
-        stateProviders.shape(stateProviders.selectedId()).selected = false
-      }
-      state.selected = id
-      stateProviders.shape(id).selected = true
+      stateModifiers.selectedId(id)
       Renderer.render(canvas, stateProviders)
       redrawPanel()
     })
 
     canvasObservables.unselects.forEach(() => {
       if (stateProviders.hasSelected()) {
-        stateProviders.shape(stateProviders.selectedId()).selected = false
-        state.selected = undefined
+        stateModifiers.removeSelected()
         Renderer.render(canvas, stateProviders)
         redrawPanel()
       }
@@ -100,18 +122,19 @@ const Main = (() => {
       const width = Math.max(square.p1.x, square.p2.x) - x
       const height = Math.max(square.p1.y, square.p2.y) - y
       const color = stateProviders.selectedColor().color
-      const selected = false
 
-      state.shapes = state.shapes.filter(x => x.id !== data.id)
-      state.shapes.push({id, name, x, y, width, height, color, selected})
+      const shape = {id, name, x, y, width, height, color}
+
+      stateModifiers.removeShape(data.id)
+      stateModifiers.appendShape(shape)
       Renderer.render(canvas, stateProviders)
       redrawPanel()
     })
 
     canvasObservables.rectDrags.forEach(data => {
-      const shape = state.shapes.find(x => x.id === data.id)
-      shape.x = data.to.x + data.offset.x
-      shape.y = data.to.y + data.offset.y
+      const newX = data.to.x + data.offset.x
+      const newY = data.to.y + data.offset.y
+      stateModifiers.shapePosition(data.id, newX, newY)
       Renderer.render(canvas, stateProviders)
     })
   }
@@ -121,8 +144,13 @@ const Main = (() => {
     subscribePanelObservables()
   }
 
+  function trace() {
+      console.log(state)
+  }
+
   return {
-    start
+    start,
+    trace
   }
 })()
 

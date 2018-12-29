@@ -2,14 +2,20 @@ body {
   margin: 0;
 }
 
+#canvas {
+  width: 800px;
+  height: 600px;
+}
+
 .container {
-  display: flex
+  display: flex;
 }
 
 .panel {
   display: flex;
   flex-direction: column;
 
+  max-height: 600px;
   width: 300px;
   background: #555;
 }
@@ -32,26 +38,26 @@ body {
   box-shadow: 0 0 2px 2px gold;
 }
 
-.panel .layers {
-  display: flex;
-  flex-direction: column;
+.panel ul.layers {
   list-style-type: none;
   padding: 0;
+  overflow: hidden;
+  overflow-y: scroll;
 }
 
-.panel .layers li {
+.panel ul.layers li {
   height: 25px;
   margin: 4px;
 }
 
-.panel .layers li.simple {
+.panel ul.layers li.simple {
   background: rgba(0, 255, 0, 0.5)
 }
 
-.panel .layers li.complex {
+.panel ul.layers li.complex {
   background: rgba(255, 0, 0, 0.5)
 }
 
-.panel .layers li.selected {
+.panel ul.layers li.selected {
   box-shadow: 0 0 2px 2px gold;
 }
