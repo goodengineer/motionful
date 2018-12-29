@@ -38,15 +38,33 @@ const Main = (() => {
   function subscribePanelObservables() {
 
     const colorObservables = Observables.getColorObservables()
+    const layerObservables = Observables.getLayerObservables()
+
     colorObservables.forEach(obs => {
       obs.forEach(e => {
+        const targetColor = e.toElement.getAttribute('color')
         stateProviders.colors().forEach(color => {
-          color.selected = color.color === e.toElement.getAttribute('color')
+          color.selected = color.color === targetColor
         })
+
+        if(stateProviders.hasSelected()) {
+          stateProviders.shape(stateProviders.selectedId()).color = targetColor
+          Renderer.render(canvas, stateProviders)
+        }
 
         redrawPanel()
       })
     })
+
+    layerObservables.forEach(obs => obs.forEach(e => {
+      const shapeId = parseInt(e.toElement.getAttribute('shapeId'))
+      stateProviders.shapes().forEach(shape => {
+        shape.selected = shape.id === shapeId
+      })
+      state.selected = shapeId
+      Renderer.render(canvas, stateProviders)
+      redrawPanel()
+    }))
   }
 
   function subscribeCanvasObservables(canvas) {

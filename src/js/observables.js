@@ -6,8 +6,8 @@ Global variables referenced:
 
 const Observables = (function() {
 
-  function getColorObservables() {
-    const result = document.querySelectorAll('.panel .colors div')
+  function getClickableObservables(selector) {
+    const result = document.querySelectorAll(selector)
     const obs = []
     for (let i = 0; i < result.length; i++) {
       obs.push(Rx.Observable.fromEvent(result[i], 'click'))
@@ -113,6 +113,7 @@ const Observables = (function() {
 
   return {
     getCanvasObservables,
-    getColorObservables
+    getColorObservables: () => getClickableObservables('.panel .colors div'),
+    getLayerObservables: () => getClickableObservables('.panel .layers li')
   }
 })()

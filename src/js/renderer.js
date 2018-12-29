@@ -6,7 +6,7 @@ const Renderer = (function() {
 
     const createLayer = shape => {
       const className = providers.selectedId() === shape.id ? 'simple selected' : 'simple'
-      return `<div class='${className}'>${shape.name}</div>`
+      return `<li class='${className}' shapeId='${shape.id}' draggable='true'>${shape.name}</li>`
     }
 
     const createColor = color => {
